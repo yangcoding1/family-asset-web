@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { getComments, addComment } from '@/lib/google-sheets';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
         }
 
         await addComment({ date, owner, message });
-        revalidateTag('comments'); // Clear cache
+        revalidatePath('/', 'layout'); // Clear cache
         return NextResponse.json({ success: true });
     } catch (error: any) {
         console.error('Comments API POST Error:', error);

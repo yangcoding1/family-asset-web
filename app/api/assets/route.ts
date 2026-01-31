@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAssets, addAsset, deleteAssets } from '@/lib/google-sheets';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic'; // While fetch is cached, we want the route handler to be dynamic to accept request params/body safely
 
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     await addAsset(body);
-    revalidateTag('assets'); // Clear cache
+    revalidatePath('/', 'layout'); // Refresh dashboard data
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('API Error:', error);
@@ -32,7 +32,7 @@ export async function DELETE(req: Request) {
     if (!rows || !Array.isArray(rows)) throw new Error("Invalid rows");
 
     await deleteAssets(rows);
-    revalidateTag('assets'); // Clear cache
+    revalidatePath('/', 'layout'); // Refresh dashboard data
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
