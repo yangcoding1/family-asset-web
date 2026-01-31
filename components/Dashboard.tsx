@@ -17,6 +17,11 @@ export default function Dashboard() {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Fetch Data
     useEffect(() => {
@@ -121,6 +126,8 @@ export default function Dashboard() {
             alert('Failed to delete');
         }
     };
+
+    if (!isMounted) return null;
 
     return (
         <div className="min-h-screen bg-[#F2F4F6] pb-20 font-sans text-gray-900">
