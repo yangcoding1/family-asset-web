@@ -53,7 +53,8 @@ export default function Dashboard() {
                 date: item.date,
                 net_worth: 0,
                 total_asset: 0,
-                net_cash: 0, savings: 0, stock_krw: 0, fixed_asset: 0
+                net_cash: 0, savings: 0, stock_krw: 0, fixed_asset: 0,
+                long_loan: 0
             };
             curr.net_worth += item.net_worth;
             curr.total_asset += item.total_asset;
@@ -61,6 +62,7 @@ export default function Dashboard() {
             curr.savings += item.savings;
             curr.stock_krw += item.stock_krw;
             curr.fixed_asset += item.fixed_asset;
+            curr.long_loan += item.long_loan;
             grouped.set(item.date, curr);
         });
 
