@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, User, MessageCircle } from 'lucide-react';
+import { X, Send, User, MessageCircle, Trash2 } from 'lucide-react';
 import { CommentRecord } from '@/types';
 
 interface CommentsSidebarProps {
@@ -72,6 +72,24 @@ export default function CommentsSidebar({ isOpen, onClose }: CommentsSidebarProp
         }
     };
 
+    const handleDelete = async (rowNumber?: number) => {
+        if (!rowNumber || !confirm('Delete this comment?')) return;
+
+        // Optimistic update
+        setComments(prev => prev.filter(c => c._row_number !== rowNumber));
+
+        try {
+            await fetch('/api/comments', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rowNumber })
+            });
+        } catch (error) {
+            console.error('Failed to delete comment');
+            fetchComments(); // Revert on error
+        }
+    };
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -120,15 +138,30 @@ export default function CommentsSidebar({ isOpen, onClose }: CommentsSidebarProp
                                     key={idx}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className={`flex flex-col ${c.owner === 'Husband' ? 'items-end' : 'items-start'}`}
+                                    className={`flex flex-col ${c.owner === 'Husband' ? 'items-end' : 'items-start'} group relative`}
                                 >
-                                    <div className={`
-                                        max-w-[85%] p-3 rounded-2xl text-sm relative shadow-sm
-                                        ${c.owner === 'Husband'
-                                            ? 'bg-[#3182F6] text-white rounded-tr-none'
-                                            : 'bg-white text-[#191F28] rounded-tl-none border border-gray-100'}
-                                    `}>
-                                        <p className="whitespace-pre-wrap">{c.message}</p>
+                                    <div className="relative max-w-[85%] group">
+                                        <div className={`
+                                            p-3 rounded-2xl text-sm shadow-sm relative z-10
+                                            ${c.owner === 'Husband'
+                                                ? 'bg-[#3182F6] text-white rounded-tr-none'
+                                                : c.owner === 'Wife'
+                                                    ? 'bg-pink-100 text-pink-900 rounded-tl-none'
+                                                    : 'bg-white text-[#191F28] rounded-tl-none border border-gray-100'}
+                                        `}>
+                                            <p className="whitespace-pre-wrap">{c.message}</p>
+                                        </div>
+
+                                        {/* Delete Button (Hover) */}
+                                        <button
+                                            onClick={() => handleDelete(c._row_number)}
+                                            className={`
+                                                absolute top-1 p-1.5 rounded-full bg-white text-red-500 shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-20
+                                                ${c.owner === 'Husband' ? '-left-8' : '-right-8'}
+                                            `}
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
                                     </div>
                                     <span className="text-[11px] text-gray-400 mt-1 px-1">
                                         {c.owner} · {c.date}

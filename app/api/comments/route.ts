@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getComments, addComment } from '@/lib/google-sheets';
+import { getComments, addComment, deleteComment } from '@/lib/google-sheets';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +29,19 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true });
     } catch (error: any) {
         console.error('Comments API POST Error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: Request) {
+    try {
+        const { rowNumber } = await req.json();
+        if (!rowNumber) return NextResponse.json({ error: 'Missing rowNumber' }, { status: 400 });
+
+        await deleteComment(rowNumber);
+        revalidatePath('/', 'layout');
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

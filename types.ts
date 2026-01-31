@@ -15,7 +15,8 @@ export interface AssetRecord {
 export type ViewMode = 'All' | 'Husband' | 'Wife' | 'Joint';
 
 export interface CommentRecord {
+    _row_number?: number;
     date: string;
-    owner: 'Husband' | 'Wife';
+    owner: 'Husband' | 'Wife' | string;
     message: string;
 }

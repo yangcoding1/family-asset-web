@@ -84,6 +84,7 @@ export const getComments = unstable_cache(
         const commentKey = findHeader(sheet, ['Comments', 'comments', 'Comment', 'comment', 'Message', 'message']) || 'Comments';
 
         const comments = rows.map((row) => ({
+            _row_number: row.rowNumber,
             date: row.get('Date') || row.get('date'),
             owner: row.get('Owner') || row.get('owner'),
             message: row.get(commentKey) || '',
@@ -134,4 +135,16 @@ export async function addComment(data: { date: string, owner: string, message: s
         [ownerKey]: data.owner,
         [commentKey]: data.message
     });
+}
+
+export async function deleteComment(rowNumber: number) {
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Comments'];
+    if (!sheet) throw new Error("Comments sheet missing");
+
+    const rows = await sheet.getRows();
+    const rowToDelete = rows.find(r => r.rowNumber === rowNumber);
+    if (rowToDelete) {
+        await rowToDelete.delete();
+    }
 }
