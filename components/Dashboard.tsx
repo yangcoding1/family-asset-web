@@ -276,8 +276,11 @@ export default function Dashboard() {
                                             <Tooltip
                                                 cursor={{ fill: '#F3F4F6' }}
                                                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                                                formatter={(val: any, name: any) => {
-                                                    if (name === 'change') return [formatCurrency(val), 'Change'];
+                                                formatter={(val: any, name: any, item: any) => {
+                                                    if (name === 'change') {
+                                                        const p = item.payload.pct?.toFixed(2) + '%' || '0%';
+                                                        return [`${formatCurrency(val)} (${p})`, 'Change'];
+                                                    }
                                                     if (name === 'abs_change') return [formatCurrency(val), 'Abs Change'];
                                                     return [val, name];
                                                 }}
@@ -405,82 +408,130 @@ export default function Dashboard() {
                                 </ResponsiveContainer>
                             </div>
                             <p className="text-sm text-gray-400 mt-4 text-center">
+                                * Detailed breakdown by category
+                            </p>
+
+                            {/* Leverage Ratio Section */}
+                            <div className="w-full mt-8 pt-6 border-t border-gray-100">
+                                <h3 className="text-lg font-bold text-[#191F28] mb-4">Leverage Ratio ⚖️</h3>
+                                {(() => {
+                                    // Calculate leverage from latest data point in aggregatedData
+                                    // Use the latest sorted date
+                                    const latest = aggregatedData[aggregatedData.length - 1] || { long_loan: 0, total_asset: 1 };
+                                    const debt = latest.long_loan || 0;
+                                    const assets = latest.total_asset || 1;
+                                    const ratio = (debt / assets) * 100;
+                                    const isSafe = ratio < 40; // Simple heuristic
+
+                                    return (
+                                        <div className="flex items-center justify-between bg-gray-50 p-6 rounded-2xl">
+                                            <div>
+                                                <p className="text-sm text-gray-500 mb-1">Debt to Asset Ratio</p>
+                                                <div className="flex items-baseline gap-2">
+                                                    <span className={`text-3xl font-bold ${isSafe ? 'text-[#10B981]' : 'text-orange-500'}`}>
+                                                        {ratio.toFixed(1)}%
+                                                    </span>
+                                                    <span className="text-sm text-gray-400">
+                                                        ({formatCompactNumber(debt)} / {formatCompactNumber(assets)})
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className={`text-sm font-semibold mb-1 ${isSafe ? 'text-[#10B981]' : 'text-orange-500'}`}>
+                                                    {isSafe ? 'Healthy ✅' : 'High Leverage ⚠️'}
+                                                </p>
+                                                <p className="text-xs text-gray-400">Target: &lt; 40%</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                                            formatter={(val: any) => `₩${val.toLocaleString()}`}
+                                        />
+                                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <p className="text-sm text-gray-400 mt-4 text-center">
                                 * Debt is excluded from asset distribution.
                             </p>
-                        </motion.div>
-                    )}
+                        </motion.div >
+                    )
+}
 
-                    {activeTab === 'history' && (
-                        <motion.div
-                            key="history"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="bg-white p-6 rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.04)]"
-                        >
-                            <h3 className="text-lg font-bold text-[#191F28] mb-4">Detailed History 📝</h3>
-                            <div className="space-y-4">
-                                {filteredData.slice().reverse().map((item, idx) => (
-                                    <div key={idx} className="group flex justify-between items-center py-4 border-b border-gray-50 last:border-0 hover:bg-gray-50 px-2 rounded-lg transition-colors">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-bold text-[#191F28]">₩{item.net_worth.toLocaleString()}</span>
-                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${item.owner === 'Husband' ? 'bg-blue-100 text-blue-600' : item.owner === 'Wife' ? 'bg-pink-100 text-pink-600' : 'bg-purple-100 text-purple-600'}`}>
-                                                    {item.owner}
-                                                </span>
-                                            </div>
-                                            <p className="text-sm text-gray-400 mt-1">{item.date} {item.memo && `· ${item.memo}`}</p>
-                                        </div>
-                                        <button
-                                            onClick={() => handleDelete(item._row_number)}
-                                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
-                                            title="Delete Record"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
-                                ))}
-                                {filteredData.length === 0 && <p className="text-center text-gray-400 py-4">No records found.</p>}
+{
+    activeTab === 'history' && (
+        <motion.div
+            key="history"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-white p-6 rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.04)]"
+        >
+            <h3 className="text-lg font-bold text-[#191F28] mb-4">Detailed History 📝</h3>
+            <div className="space-y-4">
+                {filteredData.slice().reverse().map((item, idx) => (
+                    <div key={idx} className="group flex justify-between items-center py-4 border-b border-gray-50 last:border-0 hover:bg-gray-50 px-2 rounded-lg transition-colors">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold text-[#191F28]">₩{item.net_worth.toLocaleString()}</span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${item.owner === 'Husband' ? 'bg-blue-100 text-blue-600' : item.owner === 'Wife' ? 'bg-pink-100 text-pink-600' : 'bg-purple-100 text-purple-600'}`}>
+                                    {item.owner}
+                                </span>
                             </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            <p className="text-sm text-gray-400 mt-1">{item.date} {item.memo && `· ${item.memo}`}</p>
+                        </div>
+                        <button
+                            onClick={() => handleDelete(item._row_number)}
+                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                            title="Delete Record"
+                        >
+                            <Trash2 size={18} />
+                        </button>
+                    </div>
+                ))}
+                {filteredData.length === 0 && <p className="text-center text-gray-400 py-4">No records found.</p>}
+            </div>
+        </motion.div>
+    )
+}
+                </AnimatePresence >
 
-                <div className="h-20"></div>
-            </main>
+    <div className="h-20"></div>
+            </main >
 
-            {/* Floating Action Button */}
-            <button
-                onClick={() => setIsModalOpen(true)}
-                className="fixed bottom-6 right-6 bg-[#3182F6] text-white p-4 rounded-full shadow-[0_8px_24px_rgba(49,130,246,0.3)] hover:scale-105 active:scale-95 transition-all z-40"
-            >
-                <Plus size={24} />
-            </button>
+    {/* Floating Action Button */ }
+    < button
+onClick = {() => setIsModalOpen(true)}
+className = "fixed bottom-6 right-6 bg-[#3182F6] text-white p-4 rounded-full shadow-[0_8px_24px_rgba(49,130,246,0.3)] hover:scale-105 active:scale-95 transition-all z-40"
+    >
+    <Plus size={24} />
+            </button >
 
-            {/* Modal */}
-            <AddAssetModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSuccess={() => setRefreshTrigger(p => p + 1)}
+    {/* Modal */ }
+    < AddAssetModal
+isOpen = { isModalOpen }
+onClose = {() => setIsModalOpen(false)}
+onSuccess = {() => setRefreshTrigger(p => p + 1)}
             />
 
-            {/* Comments Sidebar */}
-            <CommentsSidebar
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
-            />
+{/* Comments Sidebar */ }
+<CommentsSidebar
+    isOpen={isSidebarOpen}
+    onClose={() => setIsSidebarOpen(false)}
+/>
 
-            {/* Comment Trigger Button (Bottom Right, above FAB or beside?) User said "circle button with message icon". Positioning above FAB or slightly left. */}
-            {/* Let's put it above the FAB for clean layout */}
-            <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="fixed bottom-24 right-6 bg-white text-[#191F28] p-4 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:scale-105 active:scale-95 transition-all z-40 border border-gray-100"
-            >
-                <div className="relative">
-                    <MessageCircle size={24} />
-                    {/* Notification dot functionality could be added here if we track 'read' state */}
-                </div>
-            </button>
-        </div>
+{/* Comment Trigger Button (Bottom Right, above FAB or beside?) User said "circle button with message icon". Positioning above FAB or slightly left. */ }
+{/* Let's put it above the FAB for clean layout */ }
+<button
+    onClick={() => setIsSidebarOpen(true)}
+    className="fixed bottom-24 right-6 bg-white text-[#191F28] p-4 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:scale-105 active:scale-95 transition-all z-40 border border-gray-100"
+>
+    <div className="relative">
+        <MessageCircle size={24} />
+        {/* Notification dot functionality could be added here if we track 'read' state */}
+    </div>
+</button>
+        </div >
     );
 }
