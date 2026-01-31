@@ -63,17 +63,30 @@ export const getAssets = unstable_cache(
     }
 );
 
+// Helper to find loosely matching header
+function findHeader(sheet: any, candidates: string[]): string | undefined {
+    const headers = sheet.headerValues;
+    if (!headers) return undefined;
+    return headers.find((h: string) => candidates.includes(h));
+}
+
 export const getComments = unstable_cache(
     async (): Promise<CommentRecord[]> => {
         const doc = await getDoc();
         const sheet = doc.sheetsByTitle['Comments'];
         if (!sheet) return [];
 
+        // Ensure headers are loaded (sometimes needed depending on permission/version, though getRows does it)
+        // safe to just call getRows which loads headers
         const rows = await sheet.getRows();
+
+        // Find comment column
+        const commentKey = findHeader(sheet, ['Comments', 'comments', 'Comment', 'comment', 'Message', 'message']) || 'Comments';
+
         const comments = rows.map((row) => ({
-            date: row.get('Date'),
-            owner: row.get('Owner'), // Casting handled by consumer or validated here
-            message: row.get('Comments'),
+            date: row.get('Date') || row.get('date'),
+            owner: row.get('Owner') || row.get('owner'),
+            message: row.get(commentKey) || '',
         })).filter((c: any) => c.date && c.message) as CommentRecord[];
 
         comments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -111,9 +124,14 @@ export async function addComment(data: { date: string, owner: string, message: s
     const sheet = doc.sheetsByTitle['Comments'];
     if (!sheet) throw new Error("Comments sheet missing");
 
+    await sheet.loadHeaderRow(); // Ensure headers are loaded to find match
+    const commentKey = findHeader(sheet, ['Comments', 'comments', 'Comment', 'comment', 'Message', 'message']) || 'Comments';
+    const dateKey = findHeader(sheet, ['Date', 'date']) || 'Date';
+    const ownerKey = findHeader(sheet, ['Owner', 'owner']) || 'Owner';
+
     await sheet.addRow({
-        Date: data.date,
-        Owner: data.owner,
-        Comments: data.message
+        [dateKey]: data.date,
+        [ownerKey]: data.owner,
+        [commentKey]: data.message
     });
 }
